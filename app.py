@@ -70,7 +70,7 @@ if model is not None:
     petal_length = st.number_input("Longitud del Pétalo (cm)", min_value=0.0, max_value=10.0, value=4.0, step=0.1)
     petal_width = st.number_input("Ancho del Pétalo (cm)", min_value=0.0, max_value=10.0, value=1.0, step=0.1)
     
-    # Botón de predicción
+        # Botón de predicción
     if st.button("Predecir Especie"):
         # Preparar datos
         features = np.array([[sepal_length, sepal_width, petal_length, petal_width]])
@@ -93,3 +93,29 @@ if model is not None:
         st.write("Probabilidades:")
         for species, prob in zip(target_names, probabilities):
             st.write(f"- {species}: {prob:.1%}")
+        
+        # === Guardar resultado en la BD ===
+        try:
+            connection = psycopg2.connect(
+                user=USER,
+                password=PASSWORD,
+                host=HOST,
+                port=PORT,
+                dbname=DBNAME
+            )
+            cursor = connection.cursor()
+            
+            insert_query = """
+                INSERT INTO datos_iris (created_at, nombre)
+                VALUES (NOW(), %s);
+            """
+            cursor.execute(insert_query, (int(prediction),))
+            connection.commit()
+            
+            st.success("✅ Resultado guardado en la base de datos")
+            
+            cursor.close()
+            connection.close()
+        
+        except Exception as e:
+            st.error(f"Error al guardar en la base de datos: {e}")
